@@ -9,3 +9,47 @@ test('pick correct scope', () => {
   expect(pickRegistryForPackage(registries, '@random/lodash')).toBe('https://registry.npmjs.org/')
   expect(pickRegistryForPackage(registries, '@random/lodash', 'npm:@private/lodash@1')).toBe('https://private.registry.com/')
 })
+
+describe('registryOverrides', () => {
+  const registries = {
+    default: 'https://registry.npmjs.org/',
+    '@foo': 'https://registry.npmjs.org/',
+  }
+
+  test('per-package override beats scope registry', () => {
+    const overrides = { '@foo/private-lib': 'https://npm.pkg.github.com/' }
+    expect(pickRegistryForPackage(registries, '@foo/private-lib', undefined, overrides))
+      .toBe('https://npm.pkg.github.com/')
+  })
+
+  test('unmatched package in overridden scope still uses scope registry', () => {
+    const overrides = { '@foo/private-lib': 'https://npm.pkg.github.com/' }
+    expect(pickRegistryForPackage(registries, '@foo/public-lib', undefined, overrides))
+      .toBe('https://registry.npmjs.org/')
+  })
+
+  test('per-package override works for unscoped packages', () => {
+    const overrides = { 'my-private-lib': 'https://private.example.com/' }
+    expect(pickRegistryForPackage(registries, 'my-private-lib', undefined, overrides))
+      .toBe('https://private.example.com/')
+  })
+
+  test('override matches real package name via npm: aliasing', () => {
+    const overrides = { '@foo/private-lib': 'https://npm.pkg.github.com/' }
+    expect(pickRegistryForPackage(registries, 'local-alias', 'npm:@foo/private-lib@1.0.0', overrides))
+      .toBe('https://npm.pkg.github.com/')
+  })
+
+  test('falls through to scope/default when override map is empty or undefined', () => {
+    expect(pickRegistryForPackage(registries, '@foo/private-lib', undefined, {}))
+      .toBe('https://registry.npmjs.org/')
+    expect(pickRegistryForPackage(registries, '@foo/private-lib'))
+      .toBe('https://registry.npmjs.org/')
+  })
+
+  test('falls through when package name does not match override key', () => {
+    const overrides = { '@foo/other': 'https://other.example.com/' }
+    expect(pickRegistryForPackage(registries, '@foo/private-lib', undefined, overrides))
+      .toBe('https://registry.npmjs.org/')
+  })
+})

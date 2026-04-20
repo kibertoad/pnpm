@@ -445,6 +445,15 @@ export async function getConfig (opts: {
       pnpmConfig.registries[scope] = normalizeRegistryUrl(url)
     }
   }
+  if (pnpmConfig.registryOverrides) {
+    const normalized: Record<string, string> = {}
+    for (const [pkgName, url] of Object.entries(pnpmConfig.registryOverrides)) {
+      if (typeof url === 'string' && url !== '') {
+        normalized[pkgName] = normalizeRegistryUrl(url)
+      }
+    }
+    pnpmConfig.registryOverrides = normalized
+  }
 
   // omit some schema that the custom parser can't yet handle
   const envPnpmTypes = omit([
