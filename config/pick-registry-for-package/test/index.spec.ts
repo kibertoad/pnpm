@@ -52,4 +52,28 @@ describe('registryOverrides', () => {
     expect(pickRegistryForPackage(registries, '@foo/private-lib', undefined, overrides))
       .toBe('https://registry.npmjs.org/')
   })
+
+  test('malformed npm: specifier does not match the empty-string override key', () => {
+    // "npm:" with no package body must not accidentally look up overrides[''].
+    const overrides = { '': 'https://should-not-be-used.example.com/' }
+    expect(pickRegistryForPackage(registries, 'my-pkg', 'npm:', overrides))
+      .toBe('https://registry.npmjs.org/')
+  })
+
+  test('npm: specifier with a leading @ but no version does not collapse to empty', () => {
+    // "npm:@foo/pkg" (no @version) must resolve to the full name for override lookup.
+    const overrides = { '@foo/pkg': 'https://override.example.com/' }
+    expect(pickRegistryForPackage(registries, 'alias', 'npm:@foo/pkg', overrides))
+      .toBe('https://override.example.com/')
+  })
+
+  test('override on unscoped package does not mask scope registry lookups', () => {
+    const withScope = {
+      default: 'https://registry.npmjs.org/',
+      '@bar': 'https://bar.example.com/',
+    }
+    const overrides = { 'lodash': 'https://override.example.com/' }
+    expect(pickRegistryForPackage(withScope, '@bar/thing', undefined, overrides))
+      .toBe('https://bar.example.com/')
+  })
 })

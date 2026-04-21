@@ -452,7 +452,11 @@ export async function getConfig (opts: {
         normalized[pkgName] = normalizeRegistryUrl(url)
       }
     }
-    pnpmConfig.registryOverrides = normalized
+    if (Object.keys(normalized).length === 0) {
+      delete pnpmConfig.registryOverrides
+    } else {
+      pnpmConfig.registryOverrides = normalized
+    }
   }
 
   // omit some schema that the custom parser can't yet handle
